@@ -21,7 +21,7 @@ let proxy = "https://winter-meadow-d6c5.tuniomurtaza.workers.dev/?url=";
 
 function setup() {
   let hh =  floor(windowHeight*0.9);
-  let ww = floor(hh * (2.2 / 3));
+  let ww = min(windowWidth*0.95, floor(hh * (2.2 / 3)));
   createCanvas(ww, hh);
   frameRate(25);
   background(242, 222, 189);
