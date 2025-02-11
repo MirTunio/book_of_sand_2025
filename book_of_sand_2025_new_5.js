@@ -20,16 +20,11 @@ let startup_wait_ms = 5000; // 15000;
 let blank = ["", ""];
 let proxy = "https://winter-meadow-d6c5.tuniomurtaza.workers.dev/?url=";
 
-function preload() {
-  font = loadFont('LibreBaskerville-Regular.ttf');
-}
-
 function setup() {
   createCanvas(680, 900);
   frameRate(25);
   background(242, 222, 189);
   fill(0);
-  //textFont(font);
   textSize(18);
   getMaxQuery();
 }
