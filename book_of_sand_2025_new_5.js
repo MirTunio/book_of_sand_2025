@@ -5,8 +5,7 @@
 //
 //
 // To Do:
-// Format it it better - bg, center, outline of page, text fill
-// Make the carousel algo work again
+// Make the carousel algo work again, dont like growing array, even if u clean it up
 // Find a cool font which is for all languages
 //
 
@@ -16,16 +15,18 @@ let buffer = [];
 let dex = 0;
 let state = 0;
 let maxQuery = 58000;
-let startup_wait_ms = 5000; // 15000;
+let startup_wait_ms = 10000;
 let blank = ["", ""];
 let proxy = "https://winter-meadow-d6c5.tuniomurtaza.workers.dev/?url=";
 
 function setup() {
-  createCanvas(680, 900);
+  let hh =  floor(windowHeight*0.9);
+  let ww = floor(hh * (2.2 / 3));
+  createCanvas(ww, hh);
   frameRate(25);
   background(242, 222, 189);
   fill(0);
-  textSize(18);
+  textSize(12);
   getMaxQuery();
 }
 
@@ -43,7 +44,9 @@ function draw() {
     break;
   case 1:
     background(242, 222, 189);
-    text("Click to change the page; study the page well. You will never see it again...", 18, 30);
+    let start_text = "Click to change the page; study the page well. You will never see it again...";
+    text(start_text, 18, 30, width - 60, height - 100);
+
     state++;
     break;
   case 2:
@@ -90,6 +93,8 @@ async function getBook(triedA = false, X = 0) {
     if (text.includes("404 Not Found")) {
       return triedA ? getBook(false, 0) : getBook(true, X);
     }
+    text = text.replace(/(?:\s*\n\s*){3,}/g, '\n\n');
+
     return {text, X};  // Return both book text and its ID
   }
   catch (error) {
@@ -174,6 +179,37 @@ async function getPage(retries = 30) {
   return [meta + "\n", part];
 }
 
+function wrapChineseText(str, maxWidth) {
+  let lines = [];
+  let line = "";
+  for (let i = 0; i < str.length; i++) {
+    let testLine = line + str[i];
+    if (textWidth(testLine) > maxWidth) {
+      lines.push(line);
+      line = str[i];
+    } else {
+      line = testLine;
+    }
+  }
+  lines.push(line);
+  return lines.join("\n");
+}
+
+function adjustFontSize(textContent, maxWidth, maxFontSize, minFontSize) {
+  let lines = textContent.includes("\n") ? textContent.split("\n") : [textContent]; 
+  let testSize = maxFontSize;
+  textSize(testSize);
+  
+  let longestLine = lines.reduce((longest, line) => 
+    textWidth(line) > textWidth(longest) ? line : longest, ""); // Find the longest segment
+
+  while (textWidth(longestLine) > maxWidth && testSize > minFontSize) {
+    testSize--; // Reduce font size until it fits
+    textSize(testSize);
+  }
+
+  return testSize;
+}
 
 function showPage(page) {
   console.log("displaying page...");
@@ -185,11 +221,17 @@ function showPage(page) {
   rect(0, 0, width, height);
   noStroke();
   
-  fill(0);
   let [meta, page_content] = page;
-  textSize(18);
+  if(meta.toLowerCase().includes("language: chinese".toLowerCase()) || meta.toLowerCase().includes("language: zh")){
+    page_content = wrapChineseText(page_content, width - 60)
+  }
+
+  fill(0);
+  let this_size = adjustFontSize(page_content, width - 60, 14, 10);
+  textSize(this_size);
+  //textSize(12);
   text(page_content, 30, 30, width - 60, height - 100);
-  textSize(12);
+  textSize(8);
   textAlign(RIGHT, TOP)
   text(meta, 30, height - 64, width - 44, 90);
   textAlign(LEFT, TOP)
