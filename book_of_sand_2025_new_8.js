@@ -5,53 +5,61 @@
 //
 //
 // To Do:
-// Need more elegant fix for no metadata - just blank it?
-// Chinese text rendering fix
-// Ring buffer implement
+// page numbers add
+// page numbers match language
+// Ring buffer implement ~ yikes!
+// Fonts don't work on all platforms - perhaps download - could be fun..
+// Make the page look better: Closer to the story description
+// Find alternative way to get at least some metadata
+// Chinese text rendering test again
+//
+// Wibes:
+// Code needs to be presentable, short, commented, and slick
+// Needs to be so fucking performant - trim all the fat - click clack
+
+/*
+It was a clothbound octavo volume which had undoubtedly passed through many hands.
+I examined the book; its unexpected heft surprised me.
+On the spine was printed Holy Writ and below that Bombay.
+The characters were unfamiliar.
+The pages, which appeared to me worn and of poor typographic quality, were printed in two columns like a Bible.
+The text was cramped and arranged in versicles.
+In the upper corner of each page were Arabic numerals.
+It caught my attention that the even-numbered page bore, let’s say, the number 40,514 and the odd-numbered page that followed 999.
+I turned the page; the overleaf bore an eight-digit number.
+Also printed was a small illustration, like those in dictionaries: an anchor drawn in pen and ink, as though by a child’s unskilled hand.
+I don’t know why they’re numbered in this arbitrary way. Perhaps it’s to demonstrate that an infinite series includes any number
+*/
 
 
 
 let font;
-let buffer = [];
-//const BUFFER_SIZE = 50;
+let chosen_font = "";
+let buffer = []; // holds preloaded pages
+let bufsize = 50;
+let start_calls = 0;
+let first_two_loaded = false;
 let dex = 0; // pointer to read
-//let dexa = 0; // pointer to add
 let state = 0;
 let maxQuery = 58000;
-let startup_wait_ms = 10000;
+let startup_wait_ms = 10000; //15000;
 let blank = ["", ""];
 let proxy = "https://winter-meadow-d6c5.tuniomurtaza.workers.dev/?url=";
-
-// ring buffer
-//const BUFFER_SIZE = 50;
-//let buffer = new Array(BUFFER_SIZE).fill(null);  // Pre-allocate
-//let dex = 0;
-//let bufferIndex = 0;
-//let bufferFilled = 0;
-//let isAdding = false;  // Flag to prevent unnecessary calls
+let dots = "";
+let dotCount = 0;
+let isNotEmpty = item => !(Array.isArray(item) && item.length === 2 && item[0] === "" && item[1] === "");
 
 const fonts = [
-  // Generic font families (always available)
   "sans-serif", "serif", "monospace", "fantasy", "system-ui",
-
-  // Web-safe fonts
   "Arial", "Verdana", "Helvetica", "Tahoma", "Trebuchet MS", "Geneva",
   "Times New Roman", "Georgia", "Garamond", "Palatino Linotype", "Book Antiqua",
   "Courier New", "Lucida Console", "Monaco", "Consolas", "Courier", "Luminari", "Copperplate",
-
-  // Windows default fonts
   "Segoe UI", "Calibri", "Cambria", "Candara", "Constantia", "Corbel",
   "Franklin Gothic Medium", "Microsoft Sans Serif",
-
-  // macOS default fonts
   "San Francisco", "Gill Sans", "Optima", "American Typewriter",
   "Chalkboard", "Menlo", "Noteworthy", "Hoefler Text",
-
-  // Linux common fonts
   "Ubuntu", "DejaVu Sans", "Liberation Sans", "Droid Sans", "FreeSans"
 ];
-
-
 
 
 function setup() {
@@ -64,29 +72,48 @@ function setup() {
   fill(0);
   textSize(12);
   getMaxQuery();
+  chosen_font = random(fonts);
+  textFont(chosen_font);
 }
 
 function draw() {  
   switch (state) {
   case 0:
     background(242, 222, 189);
-    text("Loading...", 20, 20);
-    if (frameCount % 10 === 0) {
-      addToBuffer();
+    if (frameCount % 30 === 0) {
+      dotCount = (dotCount + 1) % 6;
+      dots = ".".repeat(dotCount > 3 ? 6 - dotCount : dotCount);
     }
-    if (millis() > startup_wait_ms) {
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    text("THE BOOK OF SAND", width/2 - width/4, height/2 - height/4, width/2);
+    textSize(16);
+    textAlign(LEFT, BOTTOM);
+    text("Loading" + dots, width - 90, height - 20);
+    textAlign(RIGHT, TOP);
+    if (frameCount % 10 === 0 && start_calls < bufsize/2) {
+      addToBuffer();
+      start_calls++;
+    }
+    
+    first_two_loaded = buffer.length >= 2 && isNotEmpty(buffer[0]) && isNotEmpty(buffer[1]);
+
+    if (millis() > startup_wait_ms && first_two_loaded) {
       state++;
     }
     break;
+
   case 1:
     background(242, 222, 189);
-    let start_text = "Click to change the page; study the page well. You will never see it again...";
+    textSize(16);
+    textAlign(LEFT, TOP);
+    let start_text = "Click to change the page. Study the page well. You will never see it again...";
     text(start_text, 18, 20, width - 40, height - 100);
-
     state++;
     break;
+
   case 2:
-    if (frameCount % 10 === 0 && buffer.length - dex < 50) {
+    if (frameCount % 10 === 0 && buffer.length - dex < bufsize) {
       addToBuffer();
     }
     if (frameCount % 250 === 0) {
@@ -178,6 +205,7 @@ function getMeta(full) {
 
   return meta.trim() ? meta : " \n \n";//"NO META DATA";
 }
+
 
 
 function choosePart(full) {
@@ -292,23 +320,61 @@ function applyWeatheredEffect() {
   for (let i = 0; i < 5 + random(40); i++) {
     let x = random(width);
     let y = random(height);
-    let alpha = random(10, 20);
+    let alpha = random(10, 40); // tweak
     fill(139, 69, 19, alpha); // Brownish smudges
     noStroke();
     ellipse(x,y,random(width*1), random(height*1));
   }
 
   // Slight fading on edges
-  for (let i = 0; i < 40; i++) {
-    let fade = map(i, 0, 40, 50, 0);
+  fade_end = width/8;
+  for (let i = 0; i < fade_end; i+=1) {
+    let fade = map(i, 0, fade_end, 200, 0); // tweak
     stroke(0, fade);
     line(i, 0, i, height);
     line(width - i, 0, width - i, height);
     line(0, i, width, i);
     line(0, height - i, width, height - i);
   }
+  
+  // Page bend shadow
+  bend_end = width/5;
+  for (let i = 0; i < bend_end; i+=0.5) {
+    let x = i;
+    let alpha = map(i, 0, bend_end, 200, 0); // tweak
+    stroke(0, alpha);
+    line(x, 0, x, height);
+  }
+  
+  
+  
+  let numFibers = 4000;
+  for (let i=0; i<numFibers; i++){
+    let x1 = random() * width;
+    let y1 = random() * height;
+    let theta = random() * 2 * Math.PI;
+    let segmentLength = random() * 4;
+    let x2 = cos(theta) * segmentLength + x1;
+    let y2 = sin(theta) * segmentLength + y1;
+    stroke(
+      15,
+      10-random() * 5,
+      100-random() * 8,
+      random() * 10 + 75
+    )
+    line(x1, y1, x2, y2);
+  
+  console.log("created fibers")
+}
+
   blendMode(BLEND);
   //filter(BLUR, 15); // OOF
+}
+
+function hasEnoughLexicographicCharacters(page_content) {
+  const lexicographicCharRegex = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Devanagari}]/gu;
+  const matches = page_content.match(lexicographicCharRegex);
+  return matches && matches.length >= 30;
 }
 
 
@@ -316,32 +382,35 @@ function showPage(page) {
   console.log("displaying page...");
   background(242, 222, 189);
   applyWeatheredEffect();
-  let chosen_font = random(fonts);
+  chosen_font = random(fonts);
   print("we chose: " + chosen_font);
   textFont(chosen_font);
-  
-  //noFill();
-  //strokeWeight(3);
-  //stroke(0);
-  //rect(0, 0, width, height);
   noStroke();
   
   let [meta, page_content] = page;
-  if(meta.toLowerCase().includes("language: chinese".toLowerCase()) || meta.toLowerCase().includes("language: zh")){
+  if(hasEnoughLexicographicCharacters(page_content)){
     page_content = wrapChineseText(page_content, width - 40)
+    page_content = page_content.replace(/(?:\s*\n\s*){3,}/g, '\n\n');
   }
 
-  fill(random(0, 30));
-  let this_size = adjustFontSize(page_content, width - 40, 15, 12);
+  // content
+  fill(random(0, 30), random(220,255));
+  let this_size = adjustFontSize(page_content, width - 40, 15, 9);//12);
   textSize(this_size);
+  let posx_shift = (random(10) - 5);
+  let posy_shift = (random(10) - 5);
   //textSize(12);
-  text(page_content, 20, 20, width - 40, height - 90);
+  text(page_content, 20 + posx_shift, 20 + posy_shift, width - 40 + (random(10) - 5), height - 90 + (random(10) - 5));
   
+  // meta data if exists
   this_size = adjustFontSize(meta, width - 40, 10, 9);
   textSize(this_size);
-  textAlign(RIGHT, TOP)
-  text(meta, 20, height - 64, width - 40, 90);
+  textAlign(RIGHT, TOP);
+  text(meta, 20 + (random(10) - 5), height - 64 + (random(10) - 5), width - 40 + (random(10) - 5), 90 + (random(10) - 5));
   textAlign(LEFT, TOP)
+  
+  // page numbers
+  //??
 }
 
 let lastClickTime = 0;
