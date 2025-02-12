@@ -4,18 +4,21 @@
 // Book of Sands live on the internet
 //
 //
-// To Do:
-// page numbers add
-// page numbers match language
+// To Do: (Dont forget to set debug flag on proxy)
+// Add a ink pen drawing, as if drawn by a child, random each startup, or something epic
 // Ring buffer implement ~ yikes!
 // Fonts don't work on all platforms - perhaps download - could be fun..
 // Make the page look better: Closer to the story description
 // Find alternative way to get at least some metadata
 // Chinese text rendering test again
+// page numbers matching language add
+// find a way to get books images in as well (html pgs?)
+// page flip animation - with rest of book background
 //
 // Wibes:
 // Code needs to be presentable, short, commented, and slick
 // Needs to be so fucking performant - trim all the fat - click clack
+// Mention thanks to Gutenberg - contribute how you can - can even proofread one page
 
 /*
 It was a clothbound octavo volume which had undoubtedly passed through many hands.
@@ -341,7 +344,7 @@ function applyWeatheredEffect() {
   bend_end = width/5;
   for (let i = 0; i < bend_end; i+=0.5) {
     let x = i;
-    let alpha = map(i, 0, bend_end, 200, 0); // tweak
+    let alpha = map(i, 0, bend_end, 120, 0);
     stroke(0, alpha);
     line(x, 0, x, height);
   }
